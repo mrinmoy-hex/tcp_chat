@@ -31,8 +31,26 @@ def handle_client(client: socket.socket) -> None:
     """
     while True:
         try:
+            # debug this
+            # msg = message = client.recv(1024)
             message = client.recv(1024)
-            broadcast(message)
+            
+            if message.decode('ascii').startswith('KICK'):
+                name_to_kick = message.decode('ascii')[5:]
+                kick_user(name_to_kick)
+                
+            elif message.decode('ascii').startswith('BAN'):
+                name_to_ban = message.decode('ascii')[4:]
+                kick_user(name_to_ban)
+                
+                with open('bans.txt', 'a') as f:
+                    f.write(f"{name_to_ban}\n")
+                
+                print(f"{name_to_ban} was banned.")
+                
+            else:
+                broadcast(message)
+                
         except OSError:
             # Client disconnected (abruptly closed, network drop, etc.)
             nickname = clients.pop(client)
@@ -73,6 +91,11 @@ def accept_connections() -> None:
 
         client_thread = threading.Thread(target=handle_client, args=(client,), daemon=True)
         client_thread.start()
+
+
+def kick_user(name):
+    pass
+
 
 
 if __name__ == "__main__":
