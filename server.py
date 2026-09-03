@@ -37,8 +37,13 @@ def handle_client(client: socket.socket) -> None:
             message = client.recv(1024)
             
             if message.decode('ascii').startswith('KICK'):
-                name_to_kick = message.decode('ascii')[5:]
-                kick_user(name_to_kick)
+                
+                # check for admin privileges
+                if clients.get(client) == 'admin':
+                    name_to_kick = message.decode('ascii')[5:]
+                    kick_user(name_to_kick)
+                else:
+                    client.send('You are not the admin!'.encode('ascii'))
                 
             elif message.decode('ascii').startswith('BAN'):
                 name_to_ban = message.decode('ascii')[4:]

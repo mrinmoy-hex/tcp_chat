@@ -38,6 +38,11 @@ def receive_messages() -> None:
                     if client.recv(1024).decode('ascii') == 'REFUSE':
                         print("Connection refused. Wrong Password!")
                         stop_thread = True
+
+                elif next_message == 'REFUSE':
+                    print("Connection refused. You are banned from this server!")
+                    client.close()
+                    stop_thread = True  # 
                         
             else:
                 print(message)
