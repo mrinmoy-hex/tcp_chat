@@ -14,6 +14,7 @@ server.bind((HOST, PORT))
 server.listen()
 
 # maps each connected client socket to its chosen nickname.
+# pattern is: {client_socket: nickname}
 clients: dict[socket.socket, str] = {}
 
 
@@ -94,13 +95,22 @@ def accept_connections() -> None:
 
 
 def kick_user(name):
-    pass
+    """Kick a user from the chat by their nickname."""
+    if name in clients.values():
+        for client, nicknames in clients.items():
+            if nicknames == name:
+                clients.pop(client)
+                client.send('You have been kicked by the admin!'.encode('ascii'))
+                client.close()
+                broadcast(f"{name} was kicked by the admin!".encode('ascii'))
+                break
 
 
 
 if __name__ == "__main__":
     try:
         accept_connections()
+
     except KeyboardInterrupt:
         logger.error("\nShutting down server...")
         server.close()
