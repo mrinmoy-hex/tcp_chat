@@ -32,36 +32,43 @@ def handle_client(client: socket.socket) -> None:
     """
     while True:
         try:
-            # debug this
-            # msg = message = client.recv(1024)
             message = client.recv(1024)
-            
-            if message.decode('ascii').startswith('KICK'):
-                
+
+            text = message.decode('ascii').strip()
+            parts = text.split(maxsplit=1)
+            command = parts[0] if parts else ''
+            target = parts[1].strip() if len(parts) == 2 else ''
+            if command == 'KICK':
                 # check for admin privileges
-                if clients.get(client) == 'admin':
-                    name_to_kick = message.decode('ascii')[5:]
-                    kick_user(name_to_kick)
-                else:
+                if clients.get(client) == 'admin' and target:
+                    kick_user(target)
+                elif clients.get(client) != 'admin':
                     client.send('You are not the admin!'.encode('ascii'))
                 
-            elif message.decode('ascii').startswith('BAN'):
-                name_to_ban = message.decode('ascii')[4:]
-                kick_user(name_to_ban)
+            elif command == 'BAN':
+                if clients.get(client) != 'admin':
+                    client.send('You are not the admin!'.encode('ascii'))
+                    continue
+
+                if not target:
+                    continue
+
+                kick_user(target)
                 
-                with open('bans.txt', 'a') as f:
-                    f.write(f"{name_to_ban}\n")
+                with open('bans.txt', 'a', encoding='utf-8') as bans_file:
+                    bans_file.write(f"{target}\n")
                 
-                print(f"{name_to_ban} was banned.")
+                print(f"{target} was banned.")
                 
             else:
                 broadcast(message)
                 
         except OSError:
             # Client disconnected (abruptly closed, network drop, etc.)
-            nickname = clients.pop(client)
+            nickname = clients.pop(client, None)
             client.close()
-            broadcast(f"{nickname} left the chat!".encode('ascii'))
+            if nickname is not None:
+                broadcast(f"{nickname} left the chat!".encode('ascii'))
             break
 
 
@@ -77,11 +84,14 @@ def accept_connections() -> None:
         client.send('NICK'.encode('ascii'))
         nickname = client.recv(1024).decode('ascii')
 
-        with open('bans.txt', 'r') as f:
-            bans = f.readlines()
+        if not os.path.exists('bans.txt'):
+            open('bans.txt', 'a').close()
+
+        with open('bans.txt', 'r', encoding='utf-8') as bans_file:
+            bans = {line.strip() for line in bans_file if line.strip()}
 
         # check if the user is banned
-        if f"{nickname}\n" in bans:
+        if nickname in bans:
             client.send('REFUSE'.encode('ascii'))
             client.close()
             continue
@@ -110,14 +120,13 @@ def accept_connections() -> None:
 
 def kick_user(name):
     """Kick a user from the chat by their nickname."""
-    if name in clients.values():
-        for client, nicknames in clients.items():
-            if nicknames == name:
-                clients.pop(client)
-                client.send('You have been kicked by the admin!'.encode('ascii'))
-                client.close()
-                broadcast(f"{name} was kicked by the admin!".encode('ascii'))
-                break
+    for client, nickname in list(clients.items()):
+        if nickname == name:
+            clients.pop(client, None)
+            client.send('You have been kicked by the admin!'.encode('ascii'))
+            client.close()
+            broadcast(f"{name} was kicked by the admin!".encode('ascii'))
+            break
 
 
 

@@ -58,19 +58,21 @@ def send_messages() -> None:
         if stop_thread:
             break
         
-        message = f"{nickname}: {input('')}"
-        if message[len(nickname) + 2].startswith('/'):
-            # username: /commands
+        text = input('')
+        if text.startswith('/'):
             if nickname == 'admin':
-                if message[len(nickname) + 2].startswith('/kick'):
-                    client.send(f"KICK {message[len(nickname)+2+6]}".encode('ascii'))
-                
-                elif message[len(nickname) + 2].startswith('/ban'):
-                    client.send(f"BAN {message[len(nickname)+2+5]}".encode('ascii'))
+                parts = text.split(maxsplit=1)
+                command = parts[0]
+                target = parts[1].strip() if len(parts) == 2 else ''
+                if command == '/kick' and target:
+                    client.send(f"KICK {target}".encode('ascii'))
+                elif command == '/ban' and target:
+                    client.send(f"BAN {target}".encode('ascii'))
             else:
                 print("Commands can only be executed by the admin!")
         
         else:       
+            message = f"{nickname}: {text}"
             client.send(message.encode('ascii'))
 
 
