@@ -37,7 +37,7 @@ def handle_client(client: socket.socket) -> None:
             message = client.recv(1024)
             
             if message.decode('ascii').startswith('KICK'):
-                
+
                 # check for admin privileges
                 if clients.get(client) == 'admin':
                     name_to_kick = message.decode('ascii')[5:]
@@ -77,11 +77,15 @@ def accept_connections() -> None:
         client.send('NICK'.encode('ascii'))
         nickname = client.recv(1024).decode('ascii')
 
-        with open('bans.txt', 'r') as f:
-            bans = f.readlines()
+        # check if the bans.txt file exists, if not create it
+        if not os.path.exists('bans.txt'):
+            open('bans.txt', 'a').close()
+
+        with open('bans.txt', 'r', encoding='utf-8') as f:
+            bans = [line.strip() for line in f if line.strip()]
 
         # check if the user is banned
-        if f"{nickname}\n" in bans:
+        if nickname in bans:
             client.send('REFUSE'.encode('ascii'))
             client.close()
             continue
