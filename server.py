@@ -71,6 +71,15 @@ def accept_connections() -> None:
 
         client.send('NICK'.encode('ascii'))
         nickname = client.recv(1024).decode('ascii')
+
+        with open('bans.txt', 'r') as f:
+            bans = f.readlines()
+
+        # check if the user is banned
+        if f"{nickname}\n" in bans:
+            client.send('REFUSE'.encode('ascii'))
+            client.close()
+            continue
         
         # check for admin
         if nickname == 'admin':
